@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<script>window.TKA_SERVER = "";</script>
+<!-- Baris di atas: isi dengan URL /exec Apps Script (lihat Panduan). Boleh dikosongkan; bisa juga lewat ?srv=URL -->
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Tryout TKA Kimia – Stoikiometri</title>
+<style>
+:root{
+  --bg:#f3f6f8; --card:#ffffff; --ink:#15232b; --muted:#5b6b75; --line:#d7e0e6;
+  --acc:#0b6e6e; --acc-ink:#ffffff; --acc-soft:#dff2f0; --warn:#b45309; --warn-soft:#fff3e0;
+  --bad:#b91c1c; --bad-soft:#fde8e8; --good:#15803d; --good-soft:#e3f5e8; --radius:12px;
+  font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5}
+body{-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:12px 12px 90px}
+header.top{position:sticky;top:0;z-index:5;background:var(--acc);color:var(--acc-ink);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header.top .t{font-weight:700;font-size:15px}
+header.top .sub{font-size:12px;opacity:.9}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:18px;background:rgba(255,255,255,.15);padding:4px 10px;border-radius:8px}
+.timer.warn{background:#fbbf24;color:#4a2b00}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:12px 0}
+h1{font-size:22px;margin:0 0 6px;text-wrap:balance}
+h2{font-size:18px;margin:0 0 8px}
+h3{font-size:15px;margin:14px 0 6px}
+p{margin:6px 0}
+.muted{color:var(--muted);font-size:14px}
+label.f{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
+input[type=text],select,textarea{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-family:inherit}
+textarea{min-height:110px}
+button{font-family:inherit;font-size:15px;border:0;border-radius:9px;padding:11px 16px;cursor:pointer;background:var(--acc);color:var(--acc-ink);font-weight:600}
+button.ghost{background:#fff;color:var(--acc);border:1px solid var(--acc)}
+button.soft{background:var(--acc-soft);color:var(--acc)}
+button.danger{background:var(--bad-soft);color:var(--bad)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7cc7c3;outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+.pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--acc-soft);color:var(--acc);font-weight:600;letter-spacing:.02em}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.good{background:var(--good-soft);color:var(--good)}
+/* soal */
+.stim{font-size:16px}
+.stim table,.tbl{border-collapse:collapse;width:100%;margin:8px 0;font-size:14px}
+.stim th,.stim td,.tbl th,.tbl td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.stim th,.tbl th{background:#eef3f6;font-weight:600}
+.tbl-wrap{overflow-x:auto}
+.q{font-weight:600;margin:12px 0 8px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin:6px 0;cursor:pointer;background:#fff}
+.opt:has(input:checked){border-color:var(--acc);background:var(--acc-soft)}
+.opt input{margin-top:4px;flex:0 0 auto;width:18px;height:18px}
+.opt .l{font-weight:700;min-width:20px}
+.kat td.c{text-align:center;width:88px}
+.kat input{width:20px;height:20px}
+.jd .k{font-weight:600;margin-top:8px}
+.jd select{margin-top:4px}
+.kanan li{margin:3px 0}
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px;z-index:5}
+.nav .in{max-width:720px;margin:0 auto;display:flex;gap:8px;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:8px 0}
+.grid button{padding:8px 0;font-size:13px;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:7px}
+.grid button.ans{background:var(--acc-soft);border-color:var(--acc);color:var(--acc)}
+.grid button.cur{outline:2px solid var(--acc)}
+.grid button.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.grid button.right{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+/* hasil */
+.big{font-size:44px;font-weight:800;line-height:1;color:var(--acc)}
+.bar{height:10px;background:#e6edf1;border-radius:6px;overflow:hidden;margin:4px 0 10px}
+.bar>i{display:block;height:100%;background:var(--acc)}
+.bar>i.low{background:var(--bad)}
+.bar>i.mid{background:var(--warn)}
+.kv{display:flex;justify-content:space-between;font-size:14px}
+.pemb{background:#f7fafb;border-left:3px solid var(--acc);padding:8px 12px;margin:8px 0;font-size:14px}
+code,.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;word-break:break-all}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#15232b;color:#fff;padding:10px 16px;border-radius:9px;font-size:14px;z-index:20;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+.notice{background:var(--warn-soft);color:var(--warn);padding:8px 12px;border-radius:8px;font-size:14px;margin:8px 0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}
+.tabs button{background:#fff;color:var(--muted);border:1px solid var(--line);padding:8px 12px;font-size:14px}
+.tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.small{font-size:13px}
+table.rekap{width:100%;border-collapse:collapse;font-size:13px}
+table.rekap th,table.rekap td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;white-space:nowrap}
+table.rekap th{background:#eef3f6;position:sticky;top:0}
+table.rekap td.n{text-align:right;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div><div class="t">Tryout TKA Kimia</div><div class="sub">Stoikiometri · Kelas XI · SMA Plus Merdeka Soreang</div></div>
+  <div class="timer hidden" id="timer">60:00</div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ MULAI ============ -->
+<section id="v-start">
+  <div class="card">
+    <h1>Tryout TKA Kimia – Stoikiometri</h1>
+    <p class="muted">20 soal · 60 menit · Bentuk: PG, PGK (jawaban benar lebih dari satu), PGK Kategori (Benar/Salah), Menjodohkan.</p>
+    <div id="srv-status" class="muted small"></div>
+    <label class="f" for="nama">Nama lengkap</label>
+    <input type="text" id="nama" autocomplete="name" placeholder="Nama sesuai absen">
+    <label class="f" for="kelas">Kelas</label>
+    <input type="text" id="kelas" placeholder="Contoh: XI-1" autocomplete="off">
+    <h3>Petunjuk</h3>
+    <ol class="small" style="padding-left:20px;margin:4px 0">
+      <li>Urutan soal, pilihan jawaban, dan variasi soal <b>berbeda untuk setiap siswa</b>. Kerjakan sendiri.</li>
+      <li>Skor tiap nomor: 1 jika seluruh jawaban pada nomor itu tepat, selain itu 0. Nilai = benar/20 × 100.</li>
+      <li>PGK: pilih <b>semua</b> jawaban yang benar. Kategori: isi <b>setiap baris</b>. Menjodohkan: pilih huruf untuk <b>setiap istilah</b>.</li>
+      <li>Jika HP tertutup atau halaman tersegarkan, jawaban dan sisa waktu tetap tersimpan. Saat waktu habis, jawaban dikumpulkan otomatis.</li>
+      <li>Data: Ar H=1; C=12; N=14; O=16; Na=23; Mg=24; S=32; Cl=35,5; Ca=40; Fe=56; Cu=64; Zn=65; Ba=137. Avogadro = 6,02×10²³. STP: 22,4 L/mol. (Ditampilkan juga di setiap soal.)</li>
+    </ol>
+    <div class="row" style="margin-top:14px">
+      <button id="btn-start" class="grow">Mulai mengerjakan</button>
+    </div>
+    <div id="resume-box" class="notice hidden">Ada pengerjaan yang belum selesai atas nama <b id="resume-nama"></b>. <button class="soft" id="btn-resume" style="padding:6px 10px;font-size:13px">Lanjutkan</button> <button class="ghost" id="btn-discard" style="padding:6px 10px;font-size:13px">Mulai baru</button></div>
+  </div>
+  <p class="muted small" style="text-align:center"><a href="#" id="lnk-guru" style="color:var(--muted)">Masuk sebagai guru</a></p>
+</section>
+
+<!-- ============ UJIAN ============ -->
+<section id="v-exam" class="hidden">
+  <div class="card" id="q-card"></div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><b>Navigasi soal</b><span class="muted small" id="prog"></span></div>
+    <div class="grid" id="grid"></div>
+    <p class="muted small">Ar: H=1; C=12; N=14; O=16; Na=23; Mg=24; S=32; Cl=35,5; Ca=40; Fe=56; Cu=64; Zn=65; Ba=137 · N<sub>A</sub>=6,02×10²³ · STP 22,4 L/mol</p>
+    <button class="danger" id="btn-submit" style="width:100%">Kumpulkan jawaban</button>
+  </div>
+</section>
+<div class="nav hidden" id="nav"><div class="in">
+  <button class="ghost" id="btn-prev">‹ Sebelumnya</button>
+  <span class="grow" style="text-align:center;font-weight:600" id="nav-pos"></span>
+  <button id="btn-next">Berikutnya ›</button>
+</div></div>
+
+<!-- ============ HASIL ============ -->
+<section id="v-result" class="hidden">
+  <div class="card" style="text-align:center">
+    <div class="muted">Nilai</div>
+    <div class="big" id="r-nilai">0</div>
+    <div id="r-ket" class="muted"></div>
+    <div id="r-save" class="small" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <h2>Capaian per level kognitif</h2>
+    <div id="r-level"></div>
+    <h2 style="margin-top:14px">Capaian per sub-materi</h2>
+    <div id="r-sub"></div>
+  </div>
+  <div class="card">
+    <h2>Fokus latihan</h2>
+    <div id="r-fokus"></div>
+  </div>
+  <div class="card">
+    <h2>Peta jawaban</h2>
+    <div class="grid" id="r-grid"></div>
+    <p class="muted small">Hijau = benar, merah = salah. Ketuk nomor untuk melihat soal<span id="r-pemb-note"> (pembahasan ditampilkan jika diaktifkan guru)</span>.</p>
+    <div id="r-detail"></div>
+  </div>
+  <div class="card">
+    <h2>Kirim hasil ke guru</h2>
+    <p class="small muted">Jika hasil tidak tersimpan otomatis ke server, salin kode berikut dan kirim ke guru.</p>
+    <textarea id="r-kode" readonly></textarea>
+    <div class="row" style="margin-top:8px"><button class="soft" id="btn-copy">Salin kode hasil</button><button class="ghost" id="btn-home">Kembali ke awal</button></div>
+  </div>
+</section>
+
+<!-- ============ GURU ============ -->
+<section id="v-guru" class="hidden">
+  <div class="card" id="g-login">
+    <h2>Dasbor guru</h2>
+    <label class="f" for="pin">PIN guru</label>
+    <input type="text" id="pin" inputmode="numeric" autocomplete="off">
+    <div class="row" style="margin-top:10px"><button id="btn-pin">Masuk</button><button class="ghost" id="btn-guru-back">Kembali</button></div>
+  </div>
+  <div id="g-main" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">Dasbor guru</h2><button class="ghost" id="btn-guru-out" style="padding:6px 10px;font-size:13px">Keluar</button></div>
+      <div id="g-srv" class="small muted"></div>
+      <div class="row" style="margin-top:8px">
+        <label class="small"><input type="checkbox" id="g-pemb"> Tampilkan pembahasan ke siswa</label>
+        <button class="soft" id="btn-refresh" style="padding:6px 10px;font-size:13px">Muat ulang data</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="on" data-tab="rekap">Rekap siswa</button>
+      <button data-tab="butir">Analisis butir</button>
+      <button data-tab="sub">Sub-materi</button>
+      <button data-tab="impor">Impor kode</button>
+    </div>
+    <div class="card" id="g-rekap">
+      <div class="row"><label class="small">Kelas <select id="g-kelas" style="width:auto;padding:6px 8px"></select></label><span class="grow"></span><button class="soft" id="btn-csv" style="padding:6px 10px;font-size:13px">Unduh CSV</button></div>
+      <div id="g-stat" class="small muted" style="margin:6px 0"></div>
+      <div class="tbl-wrap"><table class="rekap" id="g-tabel"></table></div>
+    </div>
+    <div class="card hidden" id="g-butir">
+      <p class="small muted">Nomor = nomor asli pada kisi-kisi (1–20). Setiap nomor punya dua varian (Paket A/B) yang setara. Tingkat kesukaran: sukar &lt; 30% · sedang 30–70% · mudah &gt; 70%.</p>
+      <div class="tbl-wrap"><table class="rekap" id="g-butir-tabel"></table></div>
+    </div>
+    <div class="card hidden" id="g-sub">
+      <div id="g-sub-isi"></div>
+    </div>
+    <div class="card hidden" id="g-impor">
+      <p class="small muted">Tempel satu atau beberapa kode hasil dari siswa (pisahkan dengan baris baru). Hasil impor disimpan di perangkat ini dan ikut dihitung dalam rekap.</p>
+      <textarea id="g-kode"></textarea>
+      <div class="row" style="margin-top:8px"><button id="btn-impor">Impor</button><button class="danger" id="btn-hapus-lokal">Hapus semua data lokal</button></div>
+      <div id="g-impor-msg" class="small"></div>
+    </div>
+  </div>
+</section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== DATA SOAL (dibangkitkan dari soal_data.json) ===================== */
+const DATA = {"meta":{"sekolah":"SMA Plus Merdeka Soreang","mapel":"Kimia","kelas":"XI","materi":"Stoikiometri","durasi":"60 menit","jumlah":20,"ar":"Ar: H = 1; C = 12; N = 14; O = 16; Na = 23; Mg = 24; S = 32; Cl = 35,5; Ca = 40; Fe = 56; Cu = 64; Zn = 65; Ba = 137; Ag = 108. Bilangan Avogadro = 6,02 × 10²³. Volume molar gas STP = 22,4 L/mol."},"blueprint":[{"no":1,"sub":"Hukum dasar kimia","level":"C2","tka":"Knowing – Mengenali","bentuk":"PG","konteks":"Penyelidikan ilmiah","indikator":"Disajikan data percobaan, peserta didik dapat mengidentifikasi hukum dasar kimia yang sesuai."},{"no":2,"sub":"Konsep mol","level":"C2","tka":"Knowing – Menjelaskan","bentuk":"PG","konteks":"Konsep dasar","indikator":"Peserta didik dapat menjelaskan hubungan mol, jumlah partikel, dan massa molar."},{"no":3,"sub":"Istilah stoikiometri","level":"C2","tka":"Knowing – Mengenali","bentuk":"Menjodohkan","konteks":"Konsep dasar","indikator":"Peserta didik dapat menjodohkan istilah stoikiometri dengan definisinya."},{"no":4,"sub":"Massa molar & mol","level":"C3","tka":"Applying – Interpretasi informasi","bentuk":"PG","konteks":"Industri/pertanian","indikator":"Diberikan massa pupuk, peserta didik dapat menghitung jumlah mol senyawa."},{"no":5,"sub":"Volume gas STP & partikel","level":"C3","tka":"Applying – Interpretasi informasi","bentuk":"PGK MCMA","konteks":"Isu lingkungan","indikator":"Diberikan massa gas polutan, peserta didik dapat menentukan pernyataan yang benar tentang mol, volume STP, dan jumlah partikel."},{"no":6,"sub":"Molaritas & pengenceran","level":"C3","tka":"Applying – Interpretasi informasi","bentuk":"PG","konteks":"Kehidupan sehari-hari","indikator":"Peserta didik dapat menghitung volume akhir pengenceran larutan."},{"no":7,"sub":"Kadar unsur dalam senyawa","level":"C3","tka":"Applying – Interpretasi informasi","bentuk":"PG","konteks":"Industri/pertanian","indikator":"Peserta didik dapat menghitung persen massa unsur dalam senyawa pupuk."},{"no":8,"sub":"Hukum Gay-Lussac & persamaan reaksi","level":"C3","tka":"Applying – Interpretasi model","bentuk":"PGK Kategori","konteks":"Proses industri","indikator":"Diberikan volume gas pereaksi, peserta didik dapat menentukan benar/salah pernyataan tentang volume gas sisa dan produk."},{"no":9,"sub":"Stoikiometri reaksi & pereaksi pembatas","level":"C3","tka":"Applying – Interpretasi informasi","bentuk":"PGK MCMA","konteks":"Penyelidikan ilmiah","indikator":"Diberikan data reaksi logam dengan asam, peserta didik dapat memilih pernyataan yang benar tentang pereaksi dan produk."},{"no":10,"sub":"Mol, partikel, massa","level":"C3","tka":"Applying – Interpretasi informasi","bentuk":"PGK Kategori","konteks":"Kehidupan sehari-hari","indikator":"Diberikan massa zat dalam produk rumah tangga, peserta didik dapat menentukan benar/salah pernyataan tentang mol dan jumlah partikel."},{"no":11,"sub":"Senyawa hidrat","level":"C3","tka":"Applying – Interpretasi informasi","bentuk":"PG","konteks":"Penyelidikan ilmiah","indikator":"Diberikan data pemanasan hidrat, peserta didik dapat menentukan jumlah molekul air kristal."},{"no":12,"sub":"Rumus empiris & molekul","level":"C4","tka":"Reasoning – Mengevaluasi/Menganalisis","bentuk":"PG","konteks":"Isu lingkungan","indikator":"Diberikan komposisi persen dan Mr, peserta didik dapat menganalisis ketepatan kesimpulan rumus empiris dan molekul."},{"no":13,"sub":"Pereaksi pembatas","level":"C4","tka":"Reasoning – Menganalisis","bentuk":"PG","konteks":"Proses industri","indikator":"Diberikan massa dua pereaksi, peserta didik dapat menganalisis massa produk maksimum dan pereaksi sisa."},{"no":14,"sub":"Hukum Proust (analisis data)","level":"C4","tka":"Reasoning – Menganalisis","bentuk":"PGK MCMA","konteks":"Penyelidikan ilmiah","indikator":"Diberikan tabel data percobaan, peserta didik dapat menganalisis perbandingan massa dan pereaksi sisa."},{"no":15,"sub":"Stoikiometri larutan (netralisasi)","level":"C4","tka":"Reasoning – Menganalisis","bentuk":"PGK Kategori","konteks":"Isu lingkungan","indikator":"Diberikan data limbah asam, peserta didik dapat menganalisis ketepatan pernyataan tentang kebutuhan basa dan produk."},{"no":16,"sub":"Persen hasil","level":"C4","tka":"Reasoning – Menganalisis","bentuk":"PG","konteks":"Proses industri","indikator":"Diberikan massa pereaksi dan produk nyata, peserta didik dapat menghitung persen hasil reaksi."},{"no":17,"sub":"Kadar unsur (evaluasi klaim)","level":"C5","tka":"Reasoning – Mengevaluasi/Justify","bentuk":"PG","konteks":"Kehidupan sehari-hari","indikator":"Diberikan klaim label produk, peserta didik dapat mengevaluasi kebenaran klaim berdasarkan perhitungan stoikiometri."},{"no":18,"sub":"Hukum Lavoisier (evaluasi kesimpulan)","level":"C5","tka":"Reasoning – Mengevaluasi","bentuk":"PGK MCMA","konteks":"Penyelidikan ilmiah","indikator":"Diberikan hasil dan kesimpulan percobaan siswa, peserta didik dapat mengevaluasi kesimpulan tersebut."},{"no":19,"sub":"Merancang komposisi reaktan","level":"C6","tka":"Reasoning – Merancang (Design)","bentuk":"PGK Kategori","konteks":"Penyelidikan ilmiah","indikator":"Diberikan target massa endapan dan pilihan larutan, peserta didik dapat menentukan komposisi reaktan yang tepat."},{"no":20,"sub":"Merancang percobaan","level":"C6","tka":"Reasoning – Merancang (Design)","bentuk":"PG","konteks":"Penyelidikan ilmiah","indikator":"Peserta didik dapat memilih rancangan percobaan yang paling tepat untuk menguji suatu hukum/menentukan besaran stoikiometri."}],"paket":{"A":[{"no":1,"tipe":"PG","stimulus":"Seorang siswa membakar 4,8 gram pita magnesium di dalam wadah tertutup rapat yang berisi udara. Massa wadah beserta isinya ditimbang sebelum dan sesudah pembakaran, dan hasilnya sama, yaitu 250,0 gram, meskipun magnesium telah berubah menjadi serbuk putih magnesium oksida.","pertanyaan":"Hasil pengamatan tersebut paling tepat dijelaskan oleh hukum ....","opsi":[["kekekalan massa (Lavoisier)",true],["perbandingan tetap (Proust)",false],["perbandingan berganda (Dalton)",false],["perbandingan volume (Gay-Lussac)",false],["Avogadro",false]],"pembahasan":"Massa total sebelum dan sesudah reaksi dalam sistem tertutup sama → Hukum Kekekalan Massa (Lavoisier). Magnesium bergabung dengan O₂ dari udara di dalam wadah, sehingga tidak ada massa yang keluar/masuk."},{"no":2,"tipe":"PG","stimulus":"Dalam stoikiometri, satu mol zat didefinisikan sebagai jumlah zat yang mengandung 6,02 × 10²³ partikel.","pertanyaan":"Pernyataan yang benar mengenai 1 mol gas oksigen (O₂) adalah ....","opsi":[["mengandung 6,02 × 10²³ atom oksigen",false],["mengandung 6,02 × 10²³ molekul O₂ dan bermassa 32 gram",true],["bermassa 16 gram",false],["volumenya 22,4 L pada suhu kamar",false],["jumlah molekulnya sama dengan jumlah molekul 2 mol gas helium",false]],"pembahasan":"1 mol O₂ = 6,02 × 10²³ molekul O₂ (= 1,204 × 10²⁴ atom O), massa = 1 × 32 = 32 g. Volume 22,4 L hanya berlaku pada STP (0 °C, 1 atm), bukan suhu kamar."},{"no":3,"tipe":"JODOH","stimulus":"Berikut istilah-istilah yang digunakan dalam stoikiometri.","pertanyaan":"Jodohkan setiap istilah pada kolom kiri dengan definisi yang tepat pada kolom kanan! (Satu definisi tidak digunakan.)","kiri":["Massa molar","Rumus empiris","Pereaksi pembatas","Molaritas","Hukum Proust"],"kanan":["jumlah mol zat terlarut dalam setiap liter larutan","perbandingan massa unsur-unsur penyusun suatu senyawa selalu tetap","perbandingan paling sederhana jumlah atom unsur-unsur dalam senyawa","massa satu mol zat, dinyatakan dalam g/mol","pereaksi yang habis lebih dahulu dan membatasi jumlah produk","volume gas-gas yang bereaksi berbanding sebagai bilangan bulat sederhana"],"kunci":["d","c","e","a","b"],"pembahasan":"1–d (massa molar = g/mol); 2–c (rumus empiris = perbandingan atom paling sederhana); 3–e (pereaksi pembatas habis lebih dulu); 4–a (molaritas = mol/L); 5–b (Proust = perbandingan massa tetap). Definisi f adalah Hukum Gay-Lussac (pengecoh)."},{"no":4,"tipe":"PG","stimulus":"Urea, CO(NH₂)₂, adalah pupuk nitrogen yang paling banyak digunakan petani di Indonesia. Seorang petani menaburkan 3 kg urea pada satu petak sawah.","pertanyaan":"Jumlah mol urea yang ditaburkan pada petak sawah tersebut adalah ....","opsi":[["20 mol",false],["50 mol",true],["60 mol",false],["180 mol",false],["500 mol",false]],"pembahasan":"Mr urea = 12 + 16 + 2(14 + 2) = 60 g/mol. n = 3.000 g ÷ 60 g/mol = 50 mol."},{"no":5,"tipe":"MCMA","stimulus":"Gas karbon dioksida (CO₂) merupakan gas rumah kaca utama dari kendaraan bermotor. Dalam sebuah uji emisi, sebuah sepeda motor tercatat melepaskan 88 gram CO₂ selama pengujian.","pertanyaan":"Pernyataan yang benar mengenai gas CO₂ yang dilepaskan tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["jumlah mol CO₂ yang dilepaskan adalah 2 mol",true],["volume CO₂ tersebut pada keadaan STP adalah 44,8 L",true],["jumlah molekul CO₂ yang dilepaskan adalah 6,02 × 10²³ molekul",false],["massa CO₂ tersebut sama dengan massa 2 mol gas N₂",false],["jumlah atom oksigen dalam gas tersebut adalah 2,408 × 10²⁴ atom",true]],"pembahasan":"n = 88/44 = 2 mol (benar). V STP = 2 × 22,4 = 44,8 L (benar). Molekul = 2 × 6,02 × 10²³ = 1,204 × 10²⁴ (salah). Massa 2 mol N₂ = 56 g ≠ 88 g (salah). Atom O = 2 mol × 2 × 6,02 × 10²³ = 2,408 × 10²⁴ (benar)."},{"no":6,"tipe":"PG","stimulus":"Untuk membersihkan kerak pada peralatan dapur, seorang siswa memerlukan larutan asam asetat (cuka) 0,5 M. Di laboratorium tersedia larutan asam asetat 2 M.","pertanyaan":"Jika siswa mengambil 50 mL larutan asam asetat 2 M, volume larutan akhir setelah diencerkan dengan air agar konsentrasinya menjadi 0,5 M adalah ....","opsi":[["100 mL",false],["150 mL",false],["200 mL",true],["250 mL",false],["400 mL",false]],"pembahasan":"Pengenceran: M₁V₁ = M₂V₂ → 2 × 50 = 0,5 × V₂ → V₂ = 200 mL."},{"no":7,"tipe":"PG","stimulus":"Kualitas pupuk nitrogen dinilai dari kadar unsur nitrogen di dalamnya. Pupuk urea memiliki rumus CO(NH₂)₂.","pertanyaan":"Kadar (persen massa) nitrogen dalam pupuk urea murni adalah ....","opsi":[["23,3%",false],["28,0%",false],["46,7%",true],["53,3%",false],["60,0%",false]],"pembahasan":"Mr urea = 60; massa N = 2 × 14 = 28. %N = 28/60 × 100% = 46,7%."},{"no":8,"tipe":"KATEGORI","label":["Benar","Salah"],"stimulus":"Amonia diproduksi secara industri melalui proses Haber-Bosch: N₂(g) + 3H₂(g) → 2NH₃(g). Dalam suatu uji skala kecil, 30 L gas N₂ direaksikan dengan 60 L gas H₂ pada suhu dan tekanan yang sama hingga salah satu pereaksi habis.","pertanyaan":"Tentukan Benar atau Salah setiap pernyataan berikut!","baris":[["Gas H₂ habis bereaksi dan gas N₂ bersisa 10 L.",0],["Volume gas NH₃ yang terbentuk adalah 40 L.",0],["Volume total gas setelah reaksi adalah 90 L.",1]],"pembahasan":"Perbandingan volume = perbandingan koefisien. 60 L H₂ memerlukan 20 L N₂ → H₂ pembatas, N₂ sisa 10 L (benar). NH₃ = 2/3 × 60 = 40 L (benar). Total setelah reaksi = 10 + 40 = 50 L, bukan 90 L (salah)."},{"no":9,"tipe":"MCMA","stimulus":"Seorang siswa mereaksikan 13 gram logam zink dengan 500 mL larutan HCl 1 M pada keadaan STP menurut reaksi: Zn(s) + 2HCl(aq) → ZnCl₂(aq) + H₂(g).","pertanyaan":"Pernyataan yang benar mengenai reaksi tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["jumlah mol Zn yang direaksikan adalah 0,2 mol",true],["HCl merupakan pereaksi pembatas",false],["volume gas H₂ yang dihasilkan pada STP adalah 4,48 L",true],["HCl yang tersisa setelah reaksi adalah 0,1 mol",true],["massa ZnCl₂ yang terbentuk adalah 13,6 gram",false]],"pembahasan":"n Zn = 13/65 = 0,2 mol; n HCl = 0,5 × 1 = 0,5 mol. Zn butuh 0,4 mol HCl → Zn pembatas (HCl bukan pembatas). H₂ = 0,2 mol = 4,48 L. HCl sisa = 0,5 − 0,4 = 0,1 mol. ZnCl₂ = 0,2 × 136 = 27,2 g (bukan 13,6 g)."},{"no":10,"tipe":"KATEGORI","label":["Benar","Salah"],"stimulus":"Tablet antasida untuk meredakan sakit maag mengandung 0,5 gram kalsium karbonat (CaCO₃) per tablet.","pertanyaan":"Tentukan Benar atau Salah setiap pernyataan berikut tentang satu tablet antasida!","baris":[["Jumlah mol CaCO₃ dalam satu tablet adalah 5 × 10⁻³ mol.",0],["Jumlah satuan rumus CaCO₃ dalam satu tablet adalah 3,01 × 10²¹.",0],["Jumlah atom oksigen dalam satu tablet adalah 3,01 × 10²¹ atom.",1]],"pembahasan":"Mr CaCO₃ = 100. n = 0,5/100 = 5 × 10⁻³ mol (benar). Satuan rumus = 5 × 10⁻³ × 6,02 × 10²³ = 3,01 × 10²¹ (benar). Atom O = 3 × 3,01 × 10²¹ = 9,03 × 10²¹ (salah)."},{"no":11,"tipe":"PG","stimulus":"Terusi (CuSO₄·xH₂O) digunakan sebagai fungisida tanaman. Untuk menentukan jumlah air kristalnya, 25 gram terusi dipanaskan hingga massanya tetap dan diperoleh 16 gram CuSO₄ anhidrat.","pertanyaan":"Nilai x dalam rumus terusi tersebut adalah ....","opsi":[["2",false],["3",false],["4",false],["5",true],["7",false]],"pembahasan":"n CuSO₄ = 16/160 = 0,1 mol. Massa air = 25 − 16 = 9 g → n H₂O = 9/18 = 0,5 mol. x = 0,5/0,1 = 5 → CuSO₄·5H₂O."},{"no":12,"tipe":"PG","stimulus":"Tim peneliti lingkungan mengisolasi satu senyawa organik dari limbah cair pabrik minuman. Senyawa tersebut hanya mengandung C, H, dan O dengan komposisi massa: 52,2% C; 13,0% H; dan sisanya O. Dari spektrometri massa diketahui Mr senyawa = 46. Seorang anggota tim menyimpulkan bahwa rumus empiris senyawa itu CH₃O dan rumus molekulnya C₂H₆O₂.","pertanyaan":"Apakah kesimpulan tersebut benar?","opsi":[["Benar, karena perbandingan mol C : H : O = 1 : 3 : 1.",false],["Benar, karena Mr C₂H₆O₂ sesuai dengan data spektrometri massa.",false],["Salah, karena rumus empirisnya C₂H₆O dan rumus molekulnya juga C₂H₆O.",true],["Salah, karena rumus empirisnya CH₃O tetapi rumus molekulnya C₃H₉O₃.",false],["Salah, karena rumus molekul yang sesuai dengan Mr 46 adalah C₄H₁₂O₂.",false]],"pembahasan":"%O = 34,8%. Mol per 100 g: C = 52,2/12 = 4,35; H = 13,0/1 = 13,0; O = 34,8/16 = 2,175. Perbandingan = 2 : 6 : 1 → RE = C₂H₆O (Mr 46). Karena Mr senyawa = 46, RM = C₂H₆O (etanol). Kesimpulan peneliti salah; Mr C₂H₆O₂ = 62 tidak sesuai data."},{"no":13,"tipe":"PG","stimulus":"Pada uji coba reaktor pembuatan amonia, 56 gram gas N₂ direaksikan dengan 9 gram gas H₂ menurut reaksi N₂(g) + 3H₂(g) → 2NH₃(g).","pertanyaan":"Massa NH₃ maksimum yang dapat dihasilkan dan massa pereaksi yang tersisa berturut-turut adalah ....","opsi":[["68 g NH₃ dan tidak ada pereaksi tersisa",false],["51 g NH₃ dan 14 g N₂",true],["51 g NH₃ dan 3 g H₂",false],["34 g NH₃ dan 14 g N₂",false],["68 g NH₃ dan 3 g H₂",false]],"pembahasan":"n N₂ = 56/28 = 2 mol; n H₂ = 9/2 = 4,5 mol. 2 mol N₂ butuh 6 mol H₂ → H₂ pembatas. NH₃ = 2/3 × 4,5 = 3 mol = 51 g. N₂ terpakai = 1,5 mol; sisa = 0,5 mol = 14 g."},{"no":14,"tipe":"MCMA","stimulus":"Sekelompok siswa memanaskan campuran serbuk besi dan belerang dengan berbagai massa hingga reaksi sempurna: Fe(s) + S(s) → FeS(s). Data hasil percobaan:","tabel":{"header":["Percobaan","Massa Fe (g)","Massa S (g)","Massa FeS (g)"],"rows":[["1","7","4","11"],["2","14","6","16,5"],["3","7","6","11"]]},"pertanyaan":"Pernyataan yang benar berdasarkan data tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["perbandingan massa Fe : S dalam senyawa FeS adalah 7 : 4",true],["pada percobaan 2, besi bersisa 3,5 gram",true],["pada percobaan 3, belerang bersisa 2 gram",true],["pada percobaan 2 seharusnya terbentuk 20 gram FeS",false],["massa FeS yang terbentuk selalu sama dengan jumlah massa Fe dan S yang dicampurkan",false]],"pembahasan":"Percobaan 1: 7 g Fe + 4 g S → 11 g FeS tanpa sisa → Fe : S = 7 : 4. Percobaan 2: 6 g S butuh 10,5 g Fe → Fe sisa 3,5 g; FeS = 16,5 g (bukan 20 g). Percobaan 3: 7 g Fe butuh 4 g S → S sisa 2 g. Massa FeS = jumlah pereaksi hanya jika tidak ada pereaksi sisa (Hukum Proust)."},{"no":15,"tipe":"KATEGORI","label":["Tepat","Tidak Tepat"],"stimulus":"Sebuah laboratorium menghasilkan 2 liter limbah asam sulfat (H₂SO₄) 0,1 M. Sebelum dibuang, limbah harus dinetralkan dengan NaOH padat menurut reaksi: H₂SO₄(aq) + 2NaOH(s) → Na₂SO₄(aq) + 2H₂O(l).","pertanyaan":"Tentukan Tepat atau Tidak Tepat setiap pernyataan berikut!","baris":[["Massa NaOH yang diperlukan untuk menetralkan limbah tepat 16 gram.",0],["Jika ditambahkan 20 gram NaOH, larutan akhir bersifat basa.",0],["Massa Na₂SO₄ yang terbentuk pada netralisasi sempurna adalah 14,2 gram.",1]],"pembahasan":"n H₂SO₄ = 2 × 0,1 = 0,2 mol → NaOH = 0,4 mol = 16 g (tepat). 20 g NaOH = 0,5 mol > 0,4 mol → berlebih, larutan basa (tepat). Na₂SO₄ = 0,2 mol × 142 = 28,4 g, bukan 14,2 g (tidak tepat)."},{"no":16,"tipe":"PG","stimulus":"Industri kapur memproduksi kapur tohor (CaO) dengan memanaskan batu kapur: CaCO₃(s) → CaO(s) + CO₂(g). Dari pemanasan 50 gram CaCO₃ murni, diperoleh 22,4 gram CaO.","pertanyaan":"Persen hasil (rendemen) reaksi tersebut adalah ....","opsi":[["44,8%",false],["56,0%",false],["80,0%",true],["89,6%",false],["100%",false]],"pembahasan":"n CaCO₃ = 50/100 = 0,5 mol → CaO teoretis = 0,5 × 56 = 28 g. % hasil = 22,4/28 × 100% = 80%."},{"no":17,"tipe":"PG","stimulus":"Sebuah produk suplemen kalsium mencantumkan label \"setiap tablet mengandung 600 mg kalsium\". Hasil analisis laboratorium menunjukkan setiap tablet mengandung 1,25 gram CaCO₃ sebagai satu-satunya sumber kalsium.","pertanyaan":"Berdasarkan hasil analisis, evaluasi yang tepat terhadap klaim pada label tersebut adalah ....","opsi":[["Klaim benar, karena 1,25 gram CaCO₃ mengandung tepat 600 mg kalsium.",false],["Klaim benar, karena massa CaCO₃ dalam tablet lebih besar dari 600 mg.",false],["Klaim tidak benar, karena kalsium dalam tablet hanya 500 mg.",true],["Klaim tidak benar, karena kalsium dalam tablet hanya 250 mg.",false],["Klaim tidak benar, karena kalsium dalam tablet mencapai 1.250 mg.",false]],"pembahasan":"Massa Ca = (Ar Ca / Mr CaCO₃) × massa CaCO₃ = 40/100 × 1.250 mg = 500 mg < 600 mg. Klaim label melebihi kandungan sebenarnya. Opsi B keliru karena membandingkan massa senyawa, bukan massa unsur kalsium."},{"no":18,"tipe":"MCMA","stimulus":"Seorang siswa meletakkan gelas kimia terbuka berisi larutan HCl berlebih di atas neraca, lalu memasukkan 10 gram CaCO₃. Setelah reaksi CaCO₃(s) + 2HCl(aq) → CaCl₂(aq) + H₂O(l) + CO₂(g) selesai, pembacaan neraca berkurang 4,4 gram. Siswa menyimpulkan: \"Hukum kekekalan massa tidak berlaku pada reaksi ini.\"","pertanyaan":"Pernyataan yang tepat untuk mengevaluasi kesimpulan siswa tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["kesimpulan siswa keliru, karena massa yang berkurang adalah gas CO₂ yang keluar dari sistem",true],["pengurangan massa 4,4 gram sesuai dengan 0,1 mol CO₂ yang dihasilkan dari 0,1 mol CaCO₃",true],["jika percobaan diulang dalam wadah tertutup, massa sebelum dan sesudah reaksi akan tetap",true],["hukum kekekalan massa memang hanya berlaku untuk reaksi yang tidak menghasilkan gas",false],["massa berkurang karena sebagian CaCO₃ tidak bereaksi",false]],"pembahasan":"n CaCO₃ = 10/100 = 0,1 mol → CO₂ = 0,1 mol = 4,4 g, tepat sama dengan pengurangan massa; jadi massa 'hilang' adalah CO₂ yang lepas ke udara (sistem terbuka). Dalam sistem tertutup massa tetap. Hukum Lavoisier berlaku untuk semua reaksi. CaCO₃ yang tidak bereaksi tidak mengurangi massa."},{"no":19,"tipe":"KATEGORI","label":["Tepat","Tidak Tepat"],"stimulus":"Seorang siswa ditugaskan menghasilkan tepat 2,33 gram endapan BaSO₄ melalui reaksi BaCl₂(aq) + Na₂SO₄(aq) → BaSO₄(s) + 2NaCl(aq). Tersedia empat botol larutan:","tabel":{"header":["Botol","Larutan","Konsentrasi"],"rows":[["A","BaCl₂","0,1 M"],["B","BaCl₂","0,2 M"],["C","Na₂SO₄","0,1 M"],["D","Na₂SO₄","0,5 M"]]},"pertanyaan":"Tentukan Tepat atau Tidak Tepat setiap rancangan komposisi reaktan berikut untuk menghasilkan tepat 2,33 gram BaSO₄!","baris":[["100 mL larutan Botol A + 100 mL larutan Botol C",0],["50 mL larutan Botol B + 20 mL larutan Botol D",0],["50 mL larutan Botol A + 50 mL larutan Botol D",1]],"pembahasan":"Target: 2,33/233 = 0,01 mol BaSO₄ → perlu ≥ 0,01 mol Ba²⁺ dan ≥ 0,01 mol SO₄²⁻, dengan pereaksi pembatas tepat 0,01 mol. (a) 0,01 mol Ba²⁺ + 0,01 mol SO₄²⁻ → 0,01 mol (tepat). (b) 0,01 mol Ba²⁺ + 0,01 mol SO₄²⁻ → 0,01 mol (tepat). (c) 0,005 mol Ba²⁺ + 0,025 mol SO₄²⁻ → hanya 0,005 mol = 1,165 g (tidak tepat)."},{"no":20,"tipe":"PG","stimulus":"Seorang siswa ingin membuktikan Hukum Perbandingan Tetap (Proust) pada pembentukan magnesium oksida dari pembakaran pita magnesium di udara.","pertanyaan":"Rancangan percobaan yang paling tepat untuk tujuan tersebut adalah ....","opsi":[["membakar 1 gram Mg satu kali, menimbang MgO yang terbentuk, lalu menghitung perbandingan massa Mg : O",false],["membakar beberapa massa Mg yang berbeda (0,5; 1,0; 1,5 gram) hingga sempurna, menimbang MgO setiap kali, lalu membandingkan perbandingan massa Mg : O dari tiap percobaan",true],["membakar 1 gram Mg pada tiga suhu berbeda dan membandingkan massa MgO yang terbentuk",false],["mencampurkan Mg dan gas O₂ dalam berbagai perbandingan volume, lalu mengukur volume gas yang tersisa",false],["melarutkan MgO dalam air pada tiga konsentrasi berbeda, lalu mengukur pH setiap larutan",false]],"pembahasan":"Hukum Proust menyatakan perbandingan massa unsur dalam senyawa selalu tetap. Untuk mengujinya, massa Mg (variabel bebas) harus divariasikan, massa O yang bergabung (variabel terikat) diukur dari selisih massa MgO dan Mg, dan pembakaran dijaga sempurna (variabel kontrol); jika rasio Mg : O selalu ≈ 3 : 2, hukum terbukti. Satu data (A) tidak bisa menunjukkan 'selalu tetap'; C, D, E menguji variabel yang tidak relevan."}],"B":[{"no":1,"tipe":"PG","stimulus":"Seorang siswa menganalisis dua sampel air: air hujan dan air sumur. Setelah dimurnikan, kedua sampel diuraikan dengan elektrolisis. Dari kedua sampel diperoleh perbandingan massa hidrogen : oksigen yang sama, yaitu 1 : 8, meskipun sumber airnya berbeda.","pertanyaan":"Hasil pengamatan tersebut paling tepat dijelaskan oleh hukum ....","opsi":[["kekekalan massa (Lavoisier)",false],["perbandingan tetap (Proust)",true],["perbandingan berganda (Dalton)",false],["perbandingan volume (Gay-Lussac)",false],["Avogadro",false]],"pembahasan":"Perbandingan massa unsur penyusun senyawa (H : O = 1 : 8 dalam air) selalu tetap dari sumber mana pun → Hukum Perbandingan Tetap (Proust)."},{"no":2,"tipe":"PG","stimulus":"Dalam stoikiometri, satu mol zat didefinisikan sebagai jumlah zat yang mengandung 6,02 × 10²³ partikel.","pertanyaan":"Pernyataan yang benar mengenai 1 mol air (H₂O) adalah ....","opsi":[["mengandung 6,02 × 10²³ atom hidrogen",false],["bermassa 18 gram dan mengandung 6,02 × 10²³ molekul H₂O",true],["bermassa 18 gram dan mengandung 3 × 6,02 × 10²³ molekul H₂O",false],["mengandung 6,02 × 10²³ atom O dan 6,02 × 10²³ atom H",false],["volumenya 22,4 L pada keadaan STP",false]],"pembahasan":"1 mol H₂O = 6,02 × 10²³ molekul, massa = 18 g. Atom H = 2 × 6,02 × 10²³; atom O = 6,02 × 10²³. Volume molar 22,4 L hanya berlaku untuk gas, sedangkan air pada STP berwujud cair."},{"no":3,"tipe":"JODOH","stimulus":"Berikut istilah-istilah yang digunakan dalam stoikiometri.","pertanyaan":"Jodohkan setiap istilah pada kolom kiri dengan definisi yang tepat pada kolom kanan! (Satu definisi tidak digunakan.)","kiri":["Bilangan Avogadro","Rumus molekul","Persen hasil","Hukum Gay-Lussac","Volume molar gas STP"],"kanan":["22,4 L untuk setiap mol gas pada 0 °C, 1 atm","jumlah partikel dalam satu mol zat, yaitu 6,02 × 10²³","jumlah atom sebenarnya dari tiap unsur dalam satu molekul senyawa","perbandingan hasil nyata terhadap hasil teoretis dikali 100%","volume gas-gas yang bereaksi berbanding sebagai bilangan bulat sederhana pada T dan P sama","massa zat sebelum dan sesudah reaksi selalu sama"],"kunci":["b","c","d","e","a"],"pembahasan":"1–b (bilangan Avogadro); 2–c (rumus molekul); 3–d (persen hasil); 4–e (Gay-Lussac); 5–a (volume molar STP). Definisi f adalah Hukum Lavoisier (pengecoh)."},{"no":4,"tipe":"PG","stimulus":"Pupuk ZA, (NH₄)₂SO₄, banyak digunakan petani untuk memenuhi kebutuhan nitrogen dan belerang tanaman. Seorang petani menaburkan 6,6 kg pupuk ZA pada satu petak sawah.","pertanyaan":"Jumlah mol (NH₄)₂SO₄ yang ditaburkan pada petak sawah tersebut adalah ....","opsi":[["25 mol",false],["50 mol",true],["66 mol",false],["132 mol",false],["660 mol",false]],"pembahasan":"Mr (NH₄)₂SO₄ = 2(14 + 4) + 32 + 4(16) = 132 g/mol. n = 6.600 g ÷ 132 g/mol = 50 mol."},{"no":5,"tipe":"MCMA","stimulus":"Gas sulfur dioksida (SO₂) dari pembakaran batu bara merupakan penyebab utama hujan asam. Dalam pemantauan cerobong, sebuah pembangkit kecil tercatat melepaskan 128 gram SO₂ selama pengukuran.","pertanyaan":"Pernyataan yang benar mengenai gas SO₂ yang dilepaskan tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["jumlah mol SO₂ yang dilepaskan adalah 2 mol",true],["volume SO₂ tersebut pada keadaan STP adalah 44,8 L",true],["jumlah molekul SO₂ yang dilepaskan adalah 1,204 × 10²⁴ molekul",true],["massa SO₂ tersebut sama dengan massa 2 mol gas CO₂",false],["jumlah atom oksigen dalam gas tersebut adalah 6,02 × 10²³ atom",false]],"pembahasan":"n = 128/64 = 2 mol (benar). V STP = 44,8 L (benar). Molekul = 2 × 6,02 × 10²³ = 1,204 × 10²⁴ (benar). Massa 2 mol CO₂ = 88 g ≠ 128 g (salah). Atom O = 2 × 2 × 6,02 × 10²³ = 2,408 × 10²⁴ (salah)."},{"no":6,"tipe":"PG","stimulus":"Untuk membersihkan noda pada pakaian, seorang siswa memerlukan larutan hidrogen peroksida (H₂O₂) 0,3 M. Di laboratorium tersedia larutan H₂O₂ 2 M.","pertanyaan":"Jika siswa mengambil 30 mL larutan H₂O₂ 2 M, volume larutan akhir setelah diencerkan dengan air agar konsentrasinya menjadi 0,3 M adalah ....","opsi":[["60 mL",false],["100 mL",false],["150 mL",false],["200 mL",true],["300 mL",false]],"pembahasan":"Pengenceran: M₁V₁ = M₂V₂ → 2 × 30 = 0,3 × V₂ → V₂ = 200 mL."},{"no":7,"tipe":"PG","stimulus":"Kualitas pupuk nitrogen dinilai dari kadar unsur nitrogen di dalamnya. Amonium nitrat memiliki rumus NH₄NO₃.","pertanyaan":"Kadar (persen massa) nitrogen dalam amonium nitrat murni adalah ....","opsi":[["17,5%",false],["28,0%",false],["35,0%",true],["40,0%",false],["45,0%",false]],"pembahasan":"Mr NH₄NO₃ = 14 + 4 + 14 + 48 = 80; massa N = 2 × 14 = 28. %N = 28/80 × 100% = 35%."},{"no":8,"tipe":"KATEGORI","label":["Benar","Salah"],"stimulus":"Asam sulfat diproduksi melalui proses kontak yang salah satu tahapnya adalah 2SO₂(g) + O₂(g) → 2SO₃(g). Dalam suatu uji skala kecil, 40 L gas SO₂ direaksikan dengan 30 L gas O₂ pada suhu dan tekanan yang sama hingga salah satu pereaksi habis.","pertanyaan":"Tentukan Benar atau Salah setiap pernyataan berikut!","baris":[["Gas SO₂ habis bereaksi dan gas O₂ bersisa 10 L.",0],["Volume gas SO₃ yang terbentuk adalah 40 L.",0],["Volume total gas setelah reaksi adalah 70 L.",1]],"pembahasan":"40 L SO₂ memerlukan 20 L O₂ → SO₂ pembatas, O₂ sisa 10 L (benar). SO₃ = 40 L (benar). Total setelah reaksi = 10 + 40 = 50 L, bukan 70 L (salah)."},{"no":9,"tipe":"MCMA","stimulus":"Seorang siswa mereaksikan 4,8 gram logam magnesium dengan 200 mL larutan HCl 3 M pada keadaan STP menurut reaksi: Mg(s) + 2HCl(aq) → MgCl₂(aq) + H₂(g).","pertanyaan":"Pernyataan yang benar mengenai reaksi tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["jumlah mol Mg yang direaksikan adalah 0,2 mol",true],["Mg habis bereaksi (merupakan pereaksi pembatas)",true],["volume gas H₂ yang dihasilkan pada STP adalah 2,24 L",false],["HCl yang tersisa setelah reaksi adalah 0,2 mol",true],["massa MgCl₂ yang terbentuk adalah 9,5 gram",false]],"pembahasan":"n Mg = 4,8/24 = 0,2 mol; n HCl = 0,2 × 3 = 0,6 mol. Mg butuh 0,4 mol HCl → Mg pembatas. H₂ = 0,2 mol = 4,48 L (bukan 2,24 L). HCl sisa = 0,6 − 0,4 = 0,2 mol. MgCl₂ = 0,2 × 95 = 19 g (bukan 9,5 g)."},{"no":10,"tipe":"KATEGORI","label":["Benar","Salah"],"stimulus":"Soda kue (natrium bikarbonat, NaHCO₃) digunakan sebagai pengembang kue. Satu resep memerlukan 4,2 gram soda kue.","pertanyaan":"Tentukan Benar atau Salah setiap pernyataan berikut tentang soda kue dalam resep tersebut!","baris":[["Jumlah mol NaHCO₃ adalah 0,05 mol.",0],["Jumlah satuan rumus NaHCO₃ adalah 3,01 × 10²².",0],["Jumlah atom oksigen dalam soda kue tersebut adalah 3,01 × 10²² atom.",1]],"pembahasan":"Mr NaHCO₃ = 23 + 1 + 12 + 48 = 84. n = 4,2/84 = 0,05 mol (benar). Satuan rumus = 0,05 × 6,02 × 10²³ = 3,01 × 10²² (benar). Atom O = 3 × 3,01 × 10²² = 9,03 × 10²² (salah)."},{"no":11,"tipe":"PG","stimulus":"Garam Inggris (MgSO₄·xH₂O) digunakan sebagai obat pencahar dan pupuk magnesium. Untuk menentukan jumlah air kristalnya, 24,6 gram garam Inggris dipanaskan hingga massanya tetap dan diperoleh 12 gram MgSO₄ anhidrat.","pertanyaan":"Nilai x dalam rumus garam Inggris tersebut adalah ....","opsi":[["3",false],["5",false],["6",false],["7",true],["10",false]],"pembahasan":"Mr MgSO₄ = 120. n MgSO₄ = 12/120 = 0,1 mol. Massa air = 24,6 − 12 = 12,6 g → n H₂O = 12,6/18 = 0,7 mol. x = 0,7/0,1 = 7 → MgSO₄·7H₂O."},{"no":12,"tipe":"PG","stimulus":"Tim peneliti lingkungan mengisolasi satu senyawa organik dari limbah cair pabrik pengawet makanan. Senyawa tersebut hanya mengandung C, H, dan O dengan komposisi massa: 40,0% C; 6,7% H; dan sisanya O. Dari spektrometri massa diketahui Mr senyawa = 60. Seorang anggota tim menyimpulkan bahwa rumus empiris senyawa itu CH₂O dan rumus molekulnya juga CH₂O.","pertanyaan":"Apakah kesimpulan tersebut benar?","opsi":[["Benar, karena rumus molekul suatu senyawa selalu sama dengan rumus empirisnya.",false],["Benar, karena perbandingan mol C : H : O = 1 : 2 : 1 sesuai dengan CH₂O.",false],["Salah, karena rumus empirisnya seharusnya C₂H₄O₂.",false],["Salah, karena rumus empirisnya memang CH₂O tetapi rumus molekulnya C₂H₄O₂.",true],["Salah, karena rumus molekul yang sesuai dengan Mr 60 adalah C₃H₆O₃.",false]],"pembahasan":"%O = 53,3%. Mol per 100 g: C = 40/12 = 3,33; H = 6,7; O = 53,3/16 = 3,33 → 1 : 2 : 1 → RE = CH₂O (Mr 30). n = 60/30 = 2 → RM = C₂H₄O₂ (asam asetat). Rumus empiris benar, tetapi rumus molekulnya keliru."},{"no":13,"tipe":"PG","stimulus":"Pada uji coba reaktor proses kontak pembuatan asam sulfat, 96 gram gas SO₂ direaksikan dengan 32 gram gas O₂ menurut reaksi 2SO₂(g) + O₂(g) → 2SO₃(g).","pertanyaan":"Massa SO₃ maksimum yang dapat dihasilkan dan massa pereaksi yang tersisa berturut-turut adalah ....","opsi":[["160 g SO₃ dan tidak ada pereaksi tersisa",false],["120 g SO₃ dan 16 g O₂",false],["120 g SO₃ dan 8 g O₂",true],["80 g SO₃ dan 8 g O₂",false],["160 g SO₃ dan 32 g SO₂",false]],"pembahasan":"n SO₂ = 96/64 = 1,5 mol; n O₂ = 32/32 = 1 mol. 1,5 mol SO₂ butuh 0,75 mol O₂ → SO₂ pembatas. SO₃ = 1,5 mol × 80 = 120 g. O₂ sisa = 1 − 0,75 = 0,25 mol = 8 g."},{"no":14,"tipe":"MCMA","stimulus":"Sekelompok siswa memanaskan campuran serbuk tembaga dan belerang dengan berbagai massa hingga reaksi sempurna: Cu(s) + S(s) → CuS(s). Data hasil percobaan:","tabel":{"header":["Percobaan","Massa Cu (g)","Massa S (g)","Massa CuS (g)"],"rows":[["1","8","4","12"],["2","10","4","12"],["3","8","6","12"]]},"pertanyaan":"Pernyataan yang benar berdasarkan data tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["perbandingan massa Cu : S dalam senyawa CuS adalah 2 : 1",true],["pada percobaan 2, tembaga bersisa 2 gram",true],["pada percobaan 3, belerang bersisa 2 gram",true],["pada percobaan 3 seharusnya terbentuk 14 gram CuS",false],["massa CuS yang terbentuk selalu sama dengan jumlah massa Cu dan S yang dicampurkan",false]],"pembahasan":"Percobaan 1: 8 g Cu + 4 g S → 12 g CuS tanpa sisa → Cu : S = 2 : 1. Percobaan 2: 4 g S butuh 8 g Cu → Cu sisa 2 g. Percobaan 3: 8 g Cu butuh 4 g S → S sisa 2 g; CuS tetap 12 g (bukan 14 g). Massa CuS = jumlah pereaksi hanya jika tidak ada sisa (Hukum Proust)."},{"no":15,"tipe":"KATEGORI","label":["Tepat","Tidak Tepat"],"stimulus":"Sebuah laboratorium menghasilkan 1,5 liter limbah asam klorida (HCl) 0,2 M. Sebelum dibuang, limbah harus dinetralkan dengan kalsium hidroksida padat menurut reaksi: 2HCl(aq) + Ca(OH)₂(s) → CaCl₂(aq) + 2H₂O(l).","pertanyaan":"Tentukan Tepat atau Tidak Tepat setiap pernyataan berikut!","baris":[["Massa Ca(OH)₂ yang diperlukan untuk menetralkan limbah tepat 11,1 gram.",0],["Jika hanya ditambahkan 7,4 gram Ca(OH)₂, larutan akhir masih bersifat asam.",0],["Massa CaCl₂ yang terbentuk pada netralisasi sempurna adalah 33,3 gram.",1]],"pembahasan":"n HCl = 1,5 × 0,2 = 0,3 mol → Ca(OH)₂ = 0,15 mol × 74 = 11,1 g (tepat). 7,4 g = 0,1 mol < 0,15 mol → HCl masih bersisa, larutan asam (tepat). CaCl₂ = 0,15 mol × 111 = 16,65 g, bukan 33,3 g (tidak tepat)."},{"no":16,"tipe":"PG","stimulus":"Industri baja memproduksi besi dengan mereduksi bijih hematit dalam tanur tinggi: Fe₂O₃(s) + 3CO(g) → 2Fe(s) + 3CO₂(g). Dari reduksi 80 gram Fe₂O₃ murni, diperoleh 42 gram besi.","pertanyaan":"Persen hasil (rendemen) reaksi tersebut adalah ....","opsi":[["52,5%",false],["60,0%",false],["75,0%",true],["84,0%",false],["100%",false]],"pembahasan":"Mr Fe₂O₃ = 160. n = 80/160 = 0,5 mol → Fe teoretis = 2 × 0,5 × 56 = 56 g. % hasil = 42/56 × 100% = 75%."},{"no":17,"tipe":"PG","stimulus":"Sebuah produk pupuk ZA mencantumkan label \"kandungan nitrogen 25%\". Hasil analisis laboratorium menunjukkan pupuk tersebut adalah (NH₄)₂SO₄ murni tanpa bahan tambahan lain.","pertanyaan":"Berdasarkan hasil analisis, evaluasi yang tepat terhadap klaim pada label tersebut adalah ....","opsi":[["Klaim benar, karena kadar nitrogen dalam (NH₄)₂SO₄ tepat 25%.",false],["Klaim benar, karena kadar nitrogen dalam (NH₄)₂SO₄ lebih dari 25%.",false],["Klaim tidak benar, karena kadar nitrogen dalam (NH₄)₂SO₄ hanya 21,2%.",true],["Klaim tidak benar, karena kadar nitrogen dalam (NH₄)₂SO₄ hanya 10,6%.",false],["Klaim tidak benar, karena kadar nitrogen dalam (NH₄)₂SO₄ mencapai 42,4%.",false]],"pembahasan":"Mr (NH₄)₂SO₄ = 132; massa N = 28. %N = 28/132 × 100% = 21,2% < 25%. Klaim label melebihi kandungan sebenarnya. Opsi D (10,6%) keliru karena hanya menghitung satu atom N; opsi E (42,4%) menghitung dua kali."},{"no":18,"tipe":"MCMA","stimulus":"Seorang siswa meletakkan gelas kimia terbuka berisi larutan H₂SO₄ berlebih di atas neraca, lalu memasukkan 6,5 gram logam zink. Setelah reaksi Zn(s) + H₂SO₄(aq) → ZnSO₄(aq) + H₂(g) selesai, pembacaan neraca berkurang 0,2 gram. Siswa menyimpulkan: \"Sebagian logam zink menguap sehingga massanya hilang.\"","pertanyaan":"Pernyataan yang tepat untuk mengevaluasi kesimpulan siswa tersebut adalah .... (Jawaban benar lebih dari satu.)","opsi":[["kesimpulan siswa keliru, karena massa yang berkurang adalah gas H₂ yang keluar dari sistem",true],["pengurangan massa 0,2 gram sesuai dengan 0,1 mol H₂ yang dihasilkan dari 0,1 mol Zn",true],["jika percobaan diulang dalam wadah tertutup, massa sebelum dan sesudah reaksi akan tetap",true],["hukum kekekalan massa memang hanya berlaku untuk reaksi antara zat padat",false],["logam zink memang mudah menguap pada suhu kamar sehingga kesimpulan siswa benar",false]],"pembahasan":"n Zn = 6,5/65 = 0,1 mol → H₂ = 0,1 mol = 0,2 g, tepat sama dengan pengurangan massa; massa 'hilang' adalah gas H₂ yang lepas (sistem terbuka). Dalam sistem tertutup massa tetap. Hukum Lavoisier berlaku untuk semua reaksi; zink tidak menguap pada suhu kamar."},{"no":19,"tipe":"KATEGORI","label":["Tepat","Tidak Tepat"],"stimulus":"Seorang siswa ditugaskan menghasilkan tepat 1,00 gram endapan CaCO₃ melalui reaksi CaCl₂(aq) + Na₂CO₃(aq) → CaCO₃(s) + 2NaCl(aq). Tersedia empat botol larutan:","tabel":{"header":["Botol","Larutan","Konsentrasi"],"rows":[["A","CaCl₂","0,1 M"],["B","CaCl₂","0,5 M"],["C","Na₂CO₃","0,1 M"],["D","Na₂CO₃","0,2 M"]]},"pertanyaan":"Tentukan Tepat atau Tidak Tepat setiap rancangan komposisi reaktan berikut untuk menghasilkan tepat 1,00 gram CaCO₃!","baris":[["100 mL larutan Botol A + 100 mL larutan Botol C",0],["20 mL larutan Botol B + 50 mL larutan Botol D",0],["50 mL larutan Botol A + 25 mL larutan Botol D",1]],"pembahasan":"Target: 1,00/100 = 0,01 mol CaCO₃ → pereaksi pembatas harus tepat 0,01 mol. (a) 0,01 mol Ca²⁺ + 0,01 mol CO₃²⁻ → 0,01 mol (tepat). (b) 0,01 mol Ca²⁺ + 0,01 mol CO₃²⁻ → 0,01 mol (tepat). (c) 0,005 mol Ca²⁺ + 0,005 mol CO₃²⁻ → hanya 0,005 mol = 0,50 g (tidak tepat)."},{"no":20,"tipe":"PG","stimulus":"Seorang siswa ingin menentukan jumlah molekul air kristal (x) dalam terusi, CuSO₄·xH₂O, menggunakan alat yang tersedia di laboratorium sekolah (neraca, cawan porselen, pembakar spiritus).","pertanyaan":"Rancangan percobaan yang paling tepat untuk tujuan tersebut adalah ....","opsi":[["melarutkan terusi dalam air, lalu mengukur volume larutan yang terbentuk",false],["menimbang terusi, memanaskannya hingga massa tetap, menimbang residu, lalu menghitung perbandingan mol CuSO₄ dan mol H₂O yang hilang",true],["memanaskan terusi selama satu menit, lalu menimbang dan membandingkan massanya dengan massa awal",false],["mengukur titik leleh terusi dan membandingkannya dengan tabel data",false],["mereaksikan terusi dengan larutan NaOH, lalu menimbang endapan yang terbentuk",false]],"pembahasan":"x ditentukan dari perbandingan mol H₂O (dari selisih massa sebelum–sesudah pemanasan) terhadap mol CuSO₄ anhidrat (dari massa residu). Pemanasan harus sampai massa tetap agar seluruh air kristal lepas (variabel kontrol); pemanasan satu menit (C) belum tentu tuntas. A, D, E tidak mengukur jumlah air kristal."}]}};
+/* ===================== KONFIGURASI ===================== */
+const CFG = { durasiMenit: 60, pin: "merdeka2026", judul: "Tryout TKA Kimia – Stoikiometri", lsKey: "tka_kimia_stoik_v1" };
+const LETTERS = "ABCDE", LOW = "abcdef";
+const qs = new URLSearchParams(location.search);
+const SERVER = (qs.get("srv") || window.TKA_SERVER || "").trim();
+
+/* ===================== UTIL ===================== */
+const $ = id => document.getElementById(id);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(arr,rnd){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+function show(id){["v-start","v-exam","v-result","v-guru"].forEach(v=>$(v).classList.toggle("hidden",v!==id));$("nav").classList.toggle("hidden",id!=="v-exam");$("timer").classList.toggle("hidden",id!=="v-exam");window.scrollTo(0,0)}
+function b64e(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
+function b64d(s){return JSON.parse(decodeURIComponent(escape(atob(s.trim()))))}
+function fmtT(s){s=Math.max(0,s);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function pct(a,b){return b?Math.round(a/b*100):0}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+/* ===================== SERVER (Apps Script) ===================== */
+async function srvGet(params){if(!SERVER)return null;const u=SERVER+(SERVER.includes("?")?"&":"?")+new URLSearchParams({...params,_:Date.now()});const r=await fetch(u,{method:"GET",redirect:"follow"});return r.json()}
+async function srvPost(body){if(!SERVER)return null;const r=await fetch(SERVER,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});return r.json()}
+
+/* ===================== SESI ===================== */
+let S = null; // sesi aktif
+function newSession(nama,kelas){
+  const seed=(Date.now()^Math.floor(Math.random()*1e9))>>>0; const rnd=mulberry32(seed);
+  const n=DATA.blueprint.length;
+  const varian=Array.from({length:n},()=>rnd()<0.5?"A":"B");     // varian per nomor
+  const order=shuffle([...Array(n).keys()],rnd);                    // urutan nomor
+  const perm={};                                                    // pengacakan opsi/baris/pasangan per nomor
+  for(let i=0;i<n;i++){const q=DATA.paket[varian[i]][i];
+    if(q.tipe==="PG"||q.tipe==="MCMA")perm[i]=shuffle([...q.opsi.keys()],rnd);
+    else if(q.tipe==="KATEGORI")perm[i]=shuffle([...q.baris.keys()],rnd);
+    else if(q.tipe==="JODOH")perm[i]={kiri:shuffle([...q.kiri.keys()],rnd),kanan:shuffle([...q.kanan.keys()],rnd)};
+  }
+  const now=Date.now();
+  S={nama,kelas,seed,varian,order,perm,answers:{},cur:0,startAt:now,deadline:now+CFG.durasiMenit*60000,submitted:false,result:null};
+  save();
+}
+function save(){lsSet(CFG.lsKey,S)}
+function Q(i){return DATA.paket[S.varian[i]][i]}
+
+/* ===================== RENDER SOAL ===================== */
+function renderQ(){
+  const pos=S.cur, i=S.order[pos], q=Q(i), bp=DATA.blueprint[i], a=S.answers[i];
+  const tipe={PG:"Pilihan Ganda – pilih satu",MCMA:"PGK – jawaban benar lebih dari satu",KATEGORI:"PGK Kategori – isi setiap baris",JODOH:"Menjodohkan – pilih huruf untuk setiap istilah"}[q.tipe];
+  let h=`<div class="row" style="justify-content:space-between"><b>Soal ${pos+1} dari ${S.order.length}</b><span class="pill">${tipe}</span></div>`;
+  h+=`<div class="stim"><p>${esc(q.stimulus)}</p>`;
+  if(q.tabel)h+=`<div class="tbl-wrap"><table><tr>${q.tabel.header.map(x=>`<th>${esc(x)}</th>`).join("")}</tr>${q.tabel.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></div>`;
+  h+=`</div><div class="q">${esc(q.pertanyaan)}</div>`;
+  if(q.tipe==="PG"||q.tipe==="MCMA"){
+    const multi=q.tipe==="MCMA";
+    h+=S.perm[i].map((oi,k)=>{const chk=multi?(a||[]).includes(oi):a===oi;return `<label class="opt"><input type="${multi?"checkbox":"radio"}" name="opt" value="${oi}" ${chk?"checked":""}><span class="l">${LETTERS[k]}.</span><span>${esc(q.opsi[oi][0])}</span></label>`}).join("");
+  }else if(q.tipe==="KATEGORI"){
+    h+=`<div class="tbl-wrap"><table class="tbl kat"><tr><th></th><th>Pernyataan</th><th class="c">${esc(q.label[0])}</th><th class="c">${esc(q.label[1])}</th></tr>`;
+    S.perm[i].forEach((ri,k)=>{const v=a?a[ri]:undefined;h+=`<tr><td>${LETTERS[k]}.</td><td>${esc(q.baris[ri][0])}</td><td class="c"><input type="radio" name="r${ri}" value="0" ${v===0?"checked":""} aria-label="${esc(q.label[0])}"></td><td class="c"><input type="radio" name="r${ri}" value="1" ${v===1?"checked":""} aria-label="${esc(q.label[1])}"></td></tr>`});
+    h+=`</table></div>`;
+  }else if(q.tipe==="JODOH"){
+    const {kiri,kanan}=S.perm[i];
+    h+=`<div class="jd"><p class="small muted">Definisi:</p><ol class="kanan small" style="list-style:none;padding-left:0">${kanan.map((ki,k)=>`<li><b>${LOW[k]}.</b> ${esc(q.kanan[ki])}</li>`).join("")}</ol>`;
+    kiri.forEach((li,k)=>{const v=a?a[li]:undefined;h+=`<div class="k">${k+1}. ${esc(q.kiri[li])}</div><select data-li="${li}"><option value="">— pilih huruf —</option>${kanan.map((ki,kk)=>`<option value="${ki}" ${v===ki?"selected":""}>${LOW[kk]}</option>`).join("")}</select>`});
+    h+=`</div>`;
+  }
+  $("q-card").innerHTML=h;
+  $("q-card").querySelectorAll("input,select").forEach(el=>el.addEventListener("change",()=>collect(i)));
+  $("nav-pos").textContent=`${pos+1} / ${S.order.length}`;
+  $("btn-prev").disabled=pos===0; $("btn-next").textContent=pos===S.order.length-1?"Ke daftar ›":"Berikutnya ›";
+  renderGrid();
+}
+function collect(i){
+  const q=Q(i), c=$("q-card");
+  if(q.tipe==="PG"){const e=c.querySelector("input[name=opt]:checked");S.answers[i]=e?+e.value:undefined}
+  else if(q.tipe==="MCMA"){const v=[...c.querySelectorAll("input[name=opt]:checked")].map(e=>+e.value);S.answers[i]=v.length?v:undefined}
+  else if(q.tipe==="KATEGORI"){const o={};let any=false;q.baris.forEach((_,ri)=>{const e=c.querySelector(`input[name=r${ri}]:checked`);if(e){o[ri]=+e.value;any=true}});S.answers[i]=any?o:undefined}
+  else if(q.tipe==="JODOH"){const o={};let any=false;c.querySelectorAll("select").forEach(s=>{if(s.value!==""){o[+s.dataset.li]=+s.value;any=true}});S.answers[i]=any?o:undefined}
+  save(); renderGrid();
+}
+function complete(i){const q=Q(i),a=S.answers[i];if(a===undefined)return false;if(q.tipe==="KATEGORI")return Object.keys(a).length===q.baris.length;if(q.tipe==="JODOH")return Object.keys(a).length===q.kiri.length;return true}
+function renderGrid(){
+  const g=$("grid");g.innerHTML=S.order.map((i,pos)=>`<button class="${complete(i)?"ans":""} ${pos===S.cur?"cur":""}" data-pos="${pos}">${pos+1}</button>`).join("");
+  g.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.cur=+b.dataset.pos;save();renderQ()});
+  const done=S.order.filter(complete).length;$("prog").textContent=`${done} dari ${S.order.length} terjawab lengkap`;
+}
+
+/* ===================== TIMER ===================== */
+let tick=null;
+function startTimer(){clearInterval(tick);const f=()=>{const s=Math.round((S.deadline-Date.now())/1000);$("timer").textContent=fmtT(s);$("timer").classList.toggle("warn",s<=300);if(s<=0){clearInterval(tick);submit(true)}};f();tick=setInterval(f,1000)}
+
+/* ===================== PENILAIAN ===================== */
+function isCorrect(q,a){
+  if(a===undefined)return false;
+  if(q.tipe==="PG")return !!q.opsi[a][1];
+  if(q.tipe==="MCMA"){const key=q.opsi.map((o,k)=>o[1]?k:-1).filter(k=>k>=0);return key.length===a.length&&key.every(k=>a.includes(k))}
+  if(q.tipe==="KATEGORI")return q.baris.every((b,ri)=>a[ri]===b[1]);
+  if(q.tipe==="JODOH")return q.kunci.every((k,li)=>a[li]===LOW.indexOf(k));
+  return false;
+}
+function grade(){
+  const items=DATA.blueprint.map((bp,i)=>({no:i+1,paket:S.varian[i],benar:isCorrect(Q(i),S.answers[i])?1:0,level:bp.level,sub:bp.sub,bentuk:bp.bentuk}));
+  const benar=items.reduce((s,x)=>s+x.benar,0);
+  return {nama:S.nama,kelas:S.kelas,mulai:S.startAt,selesai:Date.now(),durasi:Math.round((Date.now()-S.startAt)/1000),benar,nilai:Math.round(benar/items.length*100),varian:S.varian.join(""),items};
+}
+async function submit(auto){
+  if(S.submitted)return;
+  const kurang=S.order.filter(i=>!complete(i)).length;
+  if(!auto&&!confirm(kurang?`Masih ada ${kurang} soal yang belum lengkap. Tetap kumpulkan?`:"Kumpulkan jawaban sekarang?"))return;
+  clearInterval(tick);
+  S.submitted=true;S.result=grade();save();
+  renderResult();
+  const r=S.result, payload={action:"submit",id:`${S.seed}`,nama:r.nama,kelas:r.kelas,mulai:new Date(r.mulai).toISOString(),selesai:new Date(r.selesai).toISOString(),durasi:r.durasi,nilai:r.nilai,benar:r.benar,varian:r.varian,items:r.items.map(x=>x.benar).join(""),level:levelSummary(r.items)};
+  const box=$("r-save");
+  if(SERVER){box.innerHTML='<span class="pill warn">Mengirim hasil ke server…</span>';
+    try{const j=await srvPost(payload);if(j&&j.ok){box.innerHTML='<span class="pill good">Hasil tersimpan ke server sekolah</span>';S.saved=true;save();return}throw new Error(j&&j.error||"gagal")}
+    catch(e){box.innerHTML='<span class="pill bad">Gagal mengirim ke server</span> — kirim kode hasil di bawah ke guru.'}
+  }else box.innerHTML='<span class="pill warn">Hasil tersimpan di perangkat ini saja</span> — kirim kode hasil di bawah ke guru.';
+}
+function levelSummary(items){const o={};["C2","C3","C4","C5","C6"].forEach(L=>{const s=items.filter(x=>x.level===L);o[L]=pct(s.reduce((a,x)=>a+x.benar,0),s.length)});return o}
+
+/* ===================== HASIL ===================== */
+function bar(p){return `<div class="bar"><i class="${p<50?"low":p<75?"mid":""}" style="width:${p}%"></i></div>`}
+function renderResult(){
+  const r=S.result;show("v-result");
+  $("r-nilai").textContent=r.nilai;$("r-ket").textContent=`${r.benar} dari ${r.items.length} soal benar · ${fmtT(r.durasi)} · ${r.nama} (${r.kelas})`;
+  const LV={C2:"C2 · Memahami (Knowing)",C3:"C3 · Menerapkan (Applying)",C4:"C4 · Menganalisis (Reasoning)",C5:"C5 · Mengevaluasi (Reasoning)",C6:"C6 · Merancang (Reasoning)"};
+  const ls=levelSummary(r.items);
+  $("r-level").innerHTML=Object.keys(LV).map(L=>{const s=r.items.filter(x=>x.level===L);return `<div class="kv"><span>${LV[L]}</span><b>${s.reduce((a,x)=>a+x.benar,0)}/${s.length} (${ls[L]}%)</b></div>${bar(ls[L])}`}).join("");
+  const subs=[...new Set(r.items.map(x=>x.sub))];
+  $("r-sub").innerHTML=subs.map(sb=>{const s=r.items.filter(x=>x.sub===sb),b=s.reduce((a,x)=>a+x.benar,0),p=pct(b,s.length);return `<div class="kv"><span>${esc(sb)}</span><b>${b}/${s.length}</b></div>${bar(p)}`}).join("");
+  const salah=r.items.filter(x=>!x.benar);
+  const fok=[...new Set(salah.map(x=>x.sub))].slice(0,4);
+  $("r-fokus").innerHTML=fok.length?`<ol style="padding-left:20px;margin:0">${fok.map(sb=>`<li><b>${esc(sb)}</b> — soal no. ${salah.filter(x=>x.sub===sb).map(x=>x.no).join(", ")}</li>`).join("")}</ol>`:'<p>Semua sub-materi dikuasai. Pertahankan!</p>';
+  const g=$("r-grid");g.innerHTML=S.order.map((i,pos)=>`<button class="${r.items[i].benar?"right":"wrong"}" data-i="${i}" data-pos="${pos}">${pos+1}</button>`).join("");
+  g.querySelectorAll("button").forEach(b=>b.onclick=()=>renderDetail(+b.dataset.i,+b.dataset.pos));
+  $("r-detail").innerHTML="";
+  $("r-kode").value=b64e({v:1,id:S.seed,n:r.nama,k:r.kelas,s:r.nilai,b:r.benar,d:r.durasi,t:r.selesai,va:r.varian,it:r.items.map(x=>x.benar).join("")});
+}
+function renderDetail(i,pos){
+  const q=Q(i),a=S.answers[i],ok=S.result.items[i].benar;let h=`<div class="card" style="margin:8px 0"><div class="row" style="justify-content:space-between"><b>Soal ${pos+1}</b><span class="pill ${ok?"good":"bad"}">${ok?"Benar":"Salah"}</span></div><p class="small">${esc(q.stimulus)}</p><p class="small"><b>${esc(q.pertanyaan)}</b></p>`;
+  h+=`<p class="small muted">Jawaban Anda: ${esc(fmtAns(q,a,i))}</p>`;
+  if(pembahasanOn())h+=`<div class="pemb"><b>Kunci: ${esc(fmtKey(q,i))}</b><br>${esc(q.pembahasan)}</div>`;
+  $("r-detail").innerHTML=h+"</div>";$("r-detail").scrollIntoView({behavior:"smooth"});
+}
+function fmtAns(q,a,i){if(a===undefined)return "(kosong)";const p=S.perm[i];
+  if(q.tipe==="PG")return LETTERS[p.indexOf(a)];
+  if(q.tipe==="MCMA")return a.map(x=>LETTERS[p.indexOf(x)]).sort().join(", ");
+  if(q.tipe==="KATEGORI")return p.map((ri,k)=>`${LETTERS[k]}:${a[ri]===undefined?"–":q.label[a[ri]]}`).join("; ");
+  if(q.tipe==="JODOH")return p.kiri.map((li,k)=>`${k+1}–${a[li]===undefined?"–":LOW[p.kanan.indexOf(a[li])]}`).join(", ");}
+function fmtKey(q,i){const p=S.perm[i];
+  if(q.tipe==="PG")return LETTERS[p.indexOf(q.opsi.findIndex(o=>o[1]))];
+  if(q.tipe==="MCMA")return q.opsi.map((o,k)=>o[1]?LETTERS[p.indexOf(k)]:null).filter(Boolean).sort().join(", ");
+  if(q.tipe==="KATEGORI")return p.map((ri,k)=>`${LETTERS[k]}:${q.label[q.baris[ri][1]]}`).join("; ");
+  if(q.tipe==="JODOH")return p.kiri.map((li,k)=>`${k+1}–${LOW[p.kanan.indexOf(LOW.indexOf(q.kunci[li]))]}`).join(", ");}
+let SET={pembahasan:false};
+function pembahasanOn(){return !!SET.pembahasan||!!lsGet(CFG.lsKey+"_pemb",false)}
+
+/* ===================== GURU ===================== */
+let ROWS=[];
+function localRows(){return lsGet(CFG.lsKey+"_import",[])}
+function rowFromKode(o){return {id:String(o.id),nama:o.n,kelas:o.k,nilai:+o.s,benar:+o.b,durasi:+o.d,selesai:new Date(o.t).toISOString(),varian:o.va,items:o.it,sumber:"lokal"}}
+function rowItems(r){return String(r.items||"").split("").map((c,i)=>({no:i+1,paket:(r.varian||"")[i]||"?",benar:+c,level:DATA.blueprint[i].level,sub:DATA.blueprint[i].sub}))}
+async function loadGuru(){
+  const srvRows=[];$("g-srv").textContent=SERVER?"Memuat data dari server…":"Server belum diatur: hanya data lokal (impor kode hasil) yang ditampilkan.";
+  if(SERVER){try{const j=await srvGet({action:"list"});if(j&&j.ok){srvRows.push(...j.rows.map(r=>({...r,sumber:"server"})));SET.pembahasan=!!(j.settings&&j.settings.pembahasan);$("g-pemb").checked=pembahasanOn();$("g-srv").textContent=`Server terhubung · ${srvRows.length} hasil · diperbarui ${new Date().toLocaleTimeString("id-ID")}`}else throw new Error(j&&j.error)}catch(e){$("g-srv").textContent="Gagal memuat dari server ("+e.message+"). Menampilkan data lokal."}}
+  const seen=new Set(srvRows.map(r=>String(r.id)));ROWS=[...srvRows,...localRows().filter(r=>!seen.has(String(r.id)))];
+  const kelas=[...new Set(ROWS.map(r=>r.kelas))].sort();const sel=$("g-kelas");const cur=sel.value;sel.innerHTML=`<option value="">Semua</option>`+kelas.map(k=>`<option ${k===cur?"selected":""}>${esc(k)}</option>`).join("");
+  renderRekap();renderButir();renderSub();
+}
+function filtered(){const k=$("g-kelas").value;return ROWS.filter(r=>!k||r.kelas===k)}
+function renderRekap(){
+  const rows=filtered().sort((a,b)=>(a.kelas||"").localeCompare(b.kelas||"")||(a.nama||"").localeCompare(b.nama||""));
+  const t=$("g-tabel");if(!rows.length){t.innerHTML="<tr><td class='muted'>Belum ada data.</td></tr>";$("g-stat").textContent="";return}
+  const avg=Math.round(rows.reduce((s,r)=>s+(+r.nilai||0),0)/rows.length);const tuntas=rows.filter(r=>+r.nilai>=75).length;
+  $("g-stat").textContent=`${rows.length} siswa · rata-rata ${avg} · ≥75: ${tuntas} (${pct(tuntas,rows.length)}%) · terendah ${Math.min(...rows.map(r=>+r.nilai))} · tertinggi ${Math.max(...rows.map(r=>+r.nilai))}`;
+  t.innerHTML=`<tr><th>#</th><th>Nama</th><th>Kelas</th><th>Nilai</th><th>Benar</th><th>C2</th><th>C3</th><th>C4</th><th>C5</th><th>C6</th><th>Terlemah</th><th>Waktu</th><th>Sumber</th><th></th></tr>`+rows.map((r,k)=>{const it=rowItems(r),ls=levelSummary(it);const subs=[...new Set(it.map(x=>x.sub))].map(sb=>{const s=it.filter(x=>x.sub===sb);return [sb,pct(s.reduce((a,x)=>a+x.benar,0),s.length)]}).sort((a,b)=>a[1]-b[1]);
+    return `<tr><td>${k+1}</td><td>${esc(r.nama)}</td><td>${esc(r.kelas)}</td><td class="n"><b>${r.nilai}</b></td><td class="n">${r.benar}</td>${["C2","C3","C4","C5","C6"].map(L=>`<td class="n">${ls[L]}%</td>`).join("")}<td>${esc(subs[0]?subs[0][0]:"")}</td><td>${fmtT(+r.durasi||0)}</td><td>${r.sumber}</td><td><button class="danger" style="padding:3px 8px;font-size:12px" data-del="${esc(r.id)}" data-src="${r.sumber}">hapus</button></td></tr>`}).join("");
+  t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>delRow(b.dataset.del,b.dataset.src));
+}
+async function delRow(id,src){if(!confirm("Hapus hasil ini?"))return;
+  if(src==="server"){try{const j=await srvPost({action:"delete",id,pin:$("pin").value||CFG.pin});if(!j.ok)throw new Error(j.error);toast("Dihapus dari server")}catch(e){toast("Gagal: "+e.message);return}}
+  else{lsSet(CFG.lsKey+"_import",localRows().filter(r=>String(r.id)!==String(id)))}
+  loadGuru();
+}
+function renderButir(){
+  const rows=filtered();const t=$("g-butir-tabel");if(!rows.length){t.innerHTML="<tr><td class='muted'>Belum ada data.</td></tr>";return}
+  let h=`<tr><th>No</th><th>Sub-materi</th><th>Level</th><th>Bentuk</th><th>n</th><th>% benar</th><th>Kesukaran</th><th>Paket A</th><th>Paket B</th></tr>`;
+  DATA.blueprint.forEach((bp,i)=>{const its=rows.map(rowItems).map(x=>x[i]).filter(Boolean);const n=its.length,b=its.reduce((s,x)=>s+x.benar,0),p=pct(b,n);
+    const pa=its.filter(x=>x.paket==="A"),pb=its.filter(x=>x.paket==="B");const f=s=>s.length?`${pct(s.reduce((a,x)=>a+x.benar,0),s.length)}% (n=${s.length})`:"–";
+    h+=`<tr><td>${bp.no}</td><td style="white-space:normal">${esc(bp.sub)}</td><td>${bp.level}</td><td>${esc(bp.bentuk)}</td><td class="n">${n}</td><td class="n"><b>${p}%</b></td><td><span class="pill ${p<30?"bad":p<=70?"warn":"good"}">${p<30?"sukar":p<=70?"sedang":"mudah"}</span></td><td>${f(pa)}</td><td>${f(pb)}</td></tr>`});
+  t.innerHTML=h;
+}
+function renderSub(){
+  const rows=filtered();const box=$("g-sub-isi");if(!rows.length){box.innerHTML="<p class='muted'>Belum ada data.</p>";return}
+  const all=rows.flatMap(rowItems);const subs=[...new Set(DATA.blueprint.map(b=>b.sub))].map(sb=>{const s=all.filter(x=>x.sub===sb);return {sb,p:pct(s.reduce((a,x)=>a+x.benar,0),s.length),n:s.length}}).sort((a,b)=>a.p-b.p);
+  const lv=["C2","C3","C4","C5","C6"].map(L=>{const s=all.filter(x=>x.level===L);return {L,p:pct(s.reduce((a,x)=>a+x.benar,0),s.length)}});
+  box.innerHTML=`<h3 style="margin-top:0">Per level kognitif (kelas)</h3>`+lv.map(x=>`<div class="kv"><span>${x.L}</span><b>${x.p}%</b></div>${bar(x.p)}`).join("")+`<h3>Per sub-materi (terendah di atas)</h3>`+subs.map(x=>`<div class="kv"><span>${esc(x.sb)}</span><b>${x.p}%</b></div>${bar(x.p)}`).join("")+`<h3>Rekomendasi tindak lanjut</h3><ol style="padding-left:20px" class="small">${subs.filter(x=>x.p<60).slice(0,3).map(x=>`<li><b>${esc(x.sb)}</b> (${x.p}%): remedial terarah, ulangi konsep lalu latihan soal berkonteks.</li>`).join("")||"<li>Tidak ada sub-materi di bawah 60%. Lanjutkan pengayaan level C5–C6.</li>"}</ol>`;
+}
+function csv(){const rows=filtered();const head=["nama","kelas","nilai","benar","durasi_detik","selesai","varian",...DATA.blueprint.map(b=>"S"+b.no),"C2","C3","C4","C5","C6"];
+  const lines=[head.join(",")].concat(rows.map(r=>{const it=rowItems(r),ls=levelSummary(it);return [r.nama,r.kelas,r.nilai,r.benar,r.durasi,r.selesai,r.varian,...it.map(x=>x.benar),ls.C2,ls.C3,ls.C4,ls.C5,ls.C6].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")}));
+  const blob=new Blob(["\uFEFF"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="hasil_tka_kimia_stoikiometri.csv";a.click();}
+
+/* ===================== EVENT ===================== */
+window.addEventListener("DOMContentLoaded",()=>{
+  $("srv-status").innerHTML=SERVER?'<span class="pill good">Hasil akan terkirim otomatis ke guru</span>':'<span class="pill warn">Mode tanpa server: kirim kode hasil ke guru setelah selesai</span>';
+  if(SERVER)srvGet({action:"settings"}).then(j=>{if(j&&j.ok)SET.pembahasan=!!j.settings.pembahasan}).catch(()=>{});
+  const prev=lsGet(CFG.lsKey,null);
+  if(prev&&!prev.submitted&&prev.deadline>Date.now()){S=prev;$("resume-box").classList.remove("hidden");$("resume-nama").textContent=prev.nama}
+  else if(prev&&prev.submitted&&prev.result){S=prev;$("resume-box").classList.remove("hidden");$("resume-nama").textContent=prev.nama+" (sudah selesai – lihat hasil)"}
+  $("btn-resume").onclick=()=>{if(S.submitted){renderResult()}else{show("v-exam");renderQ();startTimer()}};
+  $("btn-discard").onclick=()=>{if(confirm("Hapus pengerjaan sebelumnya di perangkat ini?")){localStorage.removeItem(CFG.lsKey);S=null;$("resume-box").classList.add("hidden")}};
+  $("btn-start").onclick=()=>{const n=$("nama").value.trim(),k=$("kelas").value.trim();if(n.length<3||!k){toast("Isi nama dan kelas dahulu");return}
+    if(S&&!S.submitted&&S.deadline>Date.now()&&!confirm("Ada pengerjaan yang belum selesai. Mulai baru akan menghapusnya. Lanjutkan?"))return;
+    newSession(n,k);show("v-exam");renderQ();startTimer()};
+  $("btn-prev").onclick=()=>{if(S.cur>0){S.cur--;save();renderQ()}};
+  $("btn-next").onclick=()=>{if(S.cur<S.order.length-1){S.cur++;save();renderQ()}else{$("grid").scrollIntoView({behavior:"smooth"})}};
+  $("btn-submit").onclick=()=>submit(false);
+  $("btn-copy").onclick=async()=>{try{await navigator.clipboard.writeText($("r-kode").value);toast("Kode disalin – kirim ke guru")}catch(e){$("r-kode").select();toast("Tekan tahan lalu salin")}};
+  $("btn-home").onclick=()=>{show("v-start");location.reload()};
+  $("lnk-guru").onclick=e=>{e.preventDefault();show("v-guru")};
+  $("btn-guru-back").onclick=()=>show("v-start");
+  $("btn-pin").onclick=()=>{if($("pin").value.trim()!==CFG.pin){toast("PIN salah");return}$("g-login").classList.add("hidden");$("g-main").classList.remove("hidden");$("g-pemb").checked=pembahasanOn();loadGuru()};
+  $("btn-guru-out").onclick=()=>{$("g-main").classList.add("hidden");$("g-login").classList.remove("hidden");$("pin").value="";show("v-start")};
+  $("btn-refresh").onclick=loadGuru;$("g-kelas").onchange=()=>{renderRekap();renderButir();renderSub()};$("btn-csv").onclick=csv;
+  $("g-pemb").onchange=async e=>{const v=e.target.checked;lsSet(CFG.lsKey+"_pemb",v);if(SERVER){try{const j=await srvPost({action:"setting",key:"pembahasan",value:v,pin:$("pin").value});if(!j.ok)throw new Error(j.error);toast(v?"Pembahasan ditampilkan ke semua siswa":"Pembahasan disembunyikan")}catch(err){toast("Gagal menyimpan ke server: "+err.message)}}else toast(v?"Pembahasan aktif (perangkat ini)":"Pembahasan nonaktif")};
+  document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));["rekap","butir","sub","impor"].forEach(t=>$("g-"+t).classList.toggle("hidden",t!==b.dataset.tab))});
+  $("btn-impor").onclick=()=>{const lines=$("g-kode").value.split(/\s+/).filter(Boolean);let ok=0,gagal=0;const cur=localRows();lines.forEach(l=>{try{const o=b64d(l);if(!o.it||o.it.length!==DATA.blueprint.length)throw 0;const r=rowFromKode(o);const k=cur.findIndex(x=>String(x.id)===r.id);if(k>=0)cur[k]=r;else cur.push(r);ok++}catch(e){gagal++}});lsSet(CFG.lsKey+"_import",cur);$("g-impor-msg").textContent=`${ok} kode diimpor, ${gagal} gagal.`;$("g-kode").value="";loadGuru()};
+  $("btn-hapus-lokal").onclick=()=>{if(confirm("Hapus semua hasil impor di perangkat ini?")){lsSet(CFG.lsKey+"_import",[]);loadGuru()}};
+});
+</script>
+</body>
+</html>
